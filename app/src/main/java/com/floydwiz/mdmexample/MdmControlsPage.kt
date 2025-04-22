@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.floydwiz.mdmexample.data.MdmSwitchControl
+import com.floydwiz.mdmexample.utils.Utils
 
 const val TAG = "mdmexampledebug"
 
@@ -33,8 +34,8 @@ fun MdmControlsPage(
     val controls = remember {
         mutableStateListOf<MdmSwitchControl>()
     }
-    val isInstallDisabled = dpm.getUserRestrictions(admin)
-        .getBoolean(UserManager.DISALLOW_INSTALL_APPS, false)
+    val isInstallDisabled =
+        dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_INSTALL_APPS, false)
     val isCameraDisabled = dpm.getCameraDisabled(admin)
     val isPackageHidden = dpm.isApplicationHidden(admin, singlePackage)
 
@@ -42,41 +43,17 @@ fun MdmControlsPage(
 
     LaunchedEffect(Unit) {
         if (controls.isEmpty()) {
-            controls += listOf(
-                MdmSwitchControl(
-                    title = "Disable Camera",
-                    isChecked = isCameraDisabled,
-                    onCheckedChange = { isChecked ->
-                        if (dpm.isAdminActive(admin)) {
-                            dpm.setCameraDisabled(admin, isChecked)
-                        }
-                    }
-                ),
-                MdmSwitchControl(
-                    title = "Disable App Install",
-                    isChecked = isInstallDisabled,
-                    onCheckedChange = { isChecked ->
-                        if (dpm.isAdminActive(admin)) {
-                            if (isChecked) {
-                                dpm.addUserRestriction(admin, UserManager.DISALLOW_INSTALL_APPS)
-                            } else {
-                                dpm.clearUserRestriction(admin, UserManager.DISALLOW_INSTALL_APPS)
-                            }
-                        }
-                    }
-                ),
-                MdmSwitchControl(
-                    title = "Hide Single Package",
-                    isChecked = isPackageHidden,
-                    onCheckedChange = { isChecked ->
-                        if (dpm.isAdminActive(admin)) {
-                            dpm.setApplicationHidden(admin, singlePackage, isChecked)
-                        }
-                    }
-                )
+            controls += Utils.createMdmControls(
+                admin = admin,
+                dpm = dpm,
+                singlePackage = singlePackage,
+                isCameraDisabled = isCameraDisabled,
+                isInstallDisabled = isInstallDisabled,
+                isPackageHidden = isPackageHidden
             )
         }
     }
+
 
     LazyColumn(modifier = Modifier.padding(paddingValues)) {
         itemsIndexed(controls) { index, control ->
@@ -84,9 +61,7 @@ fun MdmControlsPage(
                 title = control.title,
                 isChecked = control.isChecked,
                 onCheckedChange = { isChecked ->
-                    // Call original logic
                     control.onCheckedChange(isChecked)
-                    // Trigger recomposition by replacing the item
                     controls[index] = control.copy(isChecked = isChecked)
                 }
             )
