@@ -8,5 +8,13 @@ object Constants {
         AppWhitelistData("com.floydwiz.browser", false),
         AppWhitelistData("com.floydwiz.youtube", true),
         AppWhitelistData("com.floydwiz.primestore", false),
+        AppWhitelistData("com.floydwiz.nigger", false),
+        AppWhitelistData("com.floydwiz.primefilemanager", false),
+    )
+
+    // Define system app allowlist that the user is allowed to toggle
+    val systemAppAllowlist = listOf(
+        "com.floydwiz.primestore",
+        "com.floydwiz.primefilemanager",
     )
 }

@@ -66,32 +66,77 @@ object Utils {
         context: Context,
         admin: ComponentName,
         dpm: DevicePolicyManager,
-        whitelistData: List<AppWhitelistData>,
+        allowedPackages: List<AppWhitelistData>,
         block: Boolean
     ): Boolean {
+        // Map for quick lookup
+        val whitelistMap = allowedPackages.associateBy { it.packageName }
+
+        // Get all user-installed apps
         val installedPackages = getUserInstalledAppPackages(context)
 
-        val whitelistMap = whitelistData.associateBy { it.packageName }
+        // Start with installed packages only
+        val allPackagesToCheck = installedPackages.toMutableSet()
 
-        for (pkg in installedPackages) {
+        // Check each package in the whitelist map
+        for (pkg in whitelistMap.keys) {
+            val isWhitelisted = whitelistMap[pkg]?.isWhitelisted == true
+            if (isWhitelisted) {
+                // Always add explicitly whitelisted apps
+                Log.i(TAG, "Explicitly whitelisted, adding to check list: $pkg")
+                allPackagesToCheck.add(pkg)
+            } else if (block && isSystemApp(context, pkg) && !Constants.systemAppAllowlist.contains(pkg)) {
+                // Skip system apps not in allowlist
+                Log.i(TAG, "Skipping system app not in allowlist: $pkg")
+            } else {
+                // Add user-installed or allowed system app
+                Log.i(TAG, "Adding to check list: $pkg")
+                allPackagesToCheck.add(pkg)
+            }
+        }
+
+        for (pkg in allPackagesToCheck) {
             val whitelistEntry = whitelistMap[pkg]
 
+            // Determine whether the app should be visible based on the block state
             val shouldBeVisible = if (!block) {
-                true // toggle OFF → everything visible
+                true // Toggle OFF: show everything
             } else {
-                whitelistEntry?.isWhitelisted == true // toggle ON → visible only if marked true
+                whitelistEntry?.isWhitelisted == true // Toggle ON: visible only if marked true
             }
 
             try {
+                // Set visibility for the app based on whether it should be shown or hidden
                 val result = dpm.setApplicationHidden(admin, pkg, !shouldBeVisible)
                 Log.d(TAG, "Set visibility for $pkg -> ${!shouldBeVisible} (result: $result)")
             } catch (e: Exception) {
+                // Log any exception that occurs
                 Log.w(TAG, "Could not set visibility for $pkg: ${e.message}")
             }
         }
 
         return true
     }
+
+    // Helper function to check if a package is a system app
+    private fun isSystemApp(context: Context, packageName: String): Boolean {
+        return try {
+            val packageInfo = context.packageManager.getPackageInfo(packageName, PackageManager.MATCH_DISABLED_COMPONENTS)
+
+            // Check if the app is a system app by checking the FLAG_SYSTEM flag
+            val isSystemApp =
+                packageInfo.applicationInfo?.flags?.and(ApplicationInfo.FLAG_SYSTEM) != 0
+
+            Log.d(TAG, "Package: $packageName | Is system app: $isSystemApp")
+
+            isSystemApp // If applicationInfo is null, consider it a system app (to avoid blocking)
+        } catch (e: PackageManager.NameNotFoundException) {
+            // Log error and consider it as a system app to avoid blocking
+            Log.w(TAG, "Package not found: $packageName. Treating it as a system app.")
+            true
+        }
+    }
+
 
     fun createMdmControls(
         context: Context,
@@ -143,7 +188,7 @@ object Utils {
                             context = context,
                             admin = admin,
                             dpm = dpm,
-                            whitelistData = Constants.APP_WHITELIST_DATA,
+                            allowedPackages = Constants.APP_WHITELIST_DATA,
                             block = isChecked
                         )
                     }
