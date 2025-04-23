@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.UserManager
 import android.util.Log
+import com.floydwiz.mdmexample.data.AppWhitelistData
 import com.floydwiz.mdmexample.data.MdmSwitchControl
 
 object Utils {
@@ -65,20 +66,27 @@ object Utils {
         context: Context,
         admin: ComponentName,
         dpm: DevicePolicyManager,
-        allowedPackages: List<String>,
+        whitelistData: List<AppWhitelistData>,
         block: Boolean
     ): Boolean {
         val installedPackages = getUserInstalledAppPackages(context)
 
+        val whitelistMap = whitelistData.associateBy { it.packageName }
+
         for (pkg in installedPackages) {
-            // Don't hide system or MDM app
-            if (!allowedPackages.contains(pkg)) {
-                try {
-                    val result = dpm.setApplicationHidden(admin, pkg, block)
-                    Log.d(TAG, "Hiding $pkg -> $result")
-                } catch (e: Exception) {
-                    Log.w(TAG, "Could not hide $pkg: ${e.message}")
-                }
+            val whitelistEntry = whitelistMap[pkg]
+
+            val shouldBeVisible = if (!block) {
+                true // toggle OFF → everything visible
+            } else {
+                whitelistEntry?.isWhitelisted == true // toggle ON → visible only if marked true
+            }
+
+            try {
+                val result = dpm.setApplicationHidden(admin, pkg, !shouldBeVisible)
+                Log.d(TAG, "Set visibility for $pkg -> ${!shouldBeVisible} (result: $result)")
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not set visibility for $pkg: ${e.message}")
             }
         }
 
@@ -131,12 +139,11 @@ object Utils {
                 isChecked = false,
                 onCheckedChange = { isChecked ->
                     if (dpm.isAdminActive(admin)) {
-                        val allowedPackages = listOf("")
                         enforceWhitelist(
                             context = context,
                             admin = admin,
                             dpm = dpm,
-                            allowedPackages = allowedPackages,
+                            whitelistData = Constants.APP_WHITELIST_DATA,
                             block = isChecked
                         )
                     }
