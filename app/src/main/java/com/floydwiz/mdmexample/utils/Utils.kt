@@ -10,6 +10,8 @@ import android.os.UserManager
 import android.util.Log
 import com.floydwiz.mdmexample.data.AppWhitelistData
 import com.floydwiz.mdmexample.data.MdmSwitchControl
+import com.floydwiz.mdmexample.utils.Constants.BROWSER_PKG
+import com.floydwiz.mdmexample.utils.Constants.restrictions
 
 object Utils {
 
@@ -85,7 +87,10 @@ object Utils {
                 // Always add explicitly whitelisted apps
                 Log.i(TAG, "Explicitly whitelisted, adding to check list: $pkg")
                 allPackagesToCheck.add(pkg)
-            } else if (block && isSystemApp(context, pkg) && !Constants.systemAppAllowlist.contains(pkg)) {
+            } else if (block && isSystemApp(context, pkg) && !Constants.systemAppAllowlist.contains(
+                    pkg
+                )
+            ) {
                 // Skip system apps not in allowlist
                 Log.i(TAG, "Skipping system app not in allowlist: $pkg")
             } else {
@@ -121,7 +126,10 @@ object Utils {
     // Helper function to check if a package is a system app
     private fun isSystemApp(context: Context, packageName: String): Boolean {
         return try {
-            val packageInfo = context.packageManager.getPackageInfo(packageName, PackageManager.MATCH_DISABLED_COMPONENTS)
+            val packageInfo = context.packageManager.getPackageInfo(
+                packageName,
+                PackageManager.MATCH_DISABLED_COMPONENTS
+            )
 
             // Check if the app is a system app by checking the FLAG_SYSTEM flag
             val isSystemApp =
@@ -145,7 +153,8 @@ object Utils {
         singlePackage: String,
         isCameraDisabled: Boolean,
         isInstallDisabled: Boolean,
-        isPackageHidden: Boolean
+        isPackageHidden: Boolean,
+        isWebsiteWhitelistEnabled: Boolean,
     ): List<MdmSwitchControl> {
         return listOf(
             MdmSwitchControl(
@@ -191,6 +200,36 @@ object Utils {
                             allowedPackages = Constants.APP_WHITELIST_DATA,
                             block = isChecked
                         )
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Whitelist Websites",
+                isChecked = isPackageHidden,
+                onCheckedChange = {
+                    if (dpm.isAdminActive(admin)) {
+                        try {
+                            Log.d("ChromeRestrictions", "Proposed restrictions: $restrictions")
+
+                            // Set the application restrictions on Chrome
+                            dpm.setApplicationRestrictions(
+                                admin,
+                                BROWSER_PKG,
+                                restrictions
+                            )
+
+                            // Retrieve the applied restrictions and log them
+                            val appliedRestrictions =
+                                dpm.getApplicationRestrictions(admin, BROWSER_PKG)
+                            Log.d(
+                                "ChromeRestrictions",
+                                "Applied restrictions: $appliedRestrictions"
+                            )
+                        } catch (e: Exception) {
+                            Log.e("ChromeRestrictions", "Failed to set restrictions: ${e.message}")
+                        }
+                    } else {
+                        Log.w("ChromeRestrictions", "Device admin is not active.")
                     }
                 }
             ),
