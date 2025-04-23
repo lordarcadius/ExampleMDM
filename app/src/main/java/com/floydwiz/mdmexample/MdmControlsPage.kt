@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.floydwiz.mdmexample.data.MdmSwitchControl
 import com.floydwiz.mdmexample.utils.Utils
@@ -30,6 +31,7 @@ fun MdmControlsPage(
     admin: ComponentName,
     dpm: DevicePolicyManager
 ) {
+    val context = LocalContext.current
     val singlePackage = "com.floydwiz.forum"
     val controls = remember {
         mutableStateListOf<MdmSwitchControl>()
@@ -49,7 +51,8 @@ fun MdmControlsPage(
                 singlePackage = singlePackage,
                 isCameraDisabled = isCameraDisabled,
                 isInstallDisabled = isInstallDisabled,
-                isPackageHidden = isPackageHidden
+                isPackageHidden = isPackageHidden,
+                context = context
             )
         }
     }
