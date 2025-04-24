@@ -13,7 +13,7 @@ object Constants {
         AppWhitelistData("com.floydwiz.primefilemanager", false),
     )
 
-    const val BROWSER_PKG = "com.microsoft.emmx"
+    const val BROWSER_PKG = "com.android.chrome"
 
     // Define system app allowlist that the user is allowed to toggle
     val systemAppAllowlist = listOf(
@@ -22,8 +22,11 @@ object Constants {
     )
 
     val restrictions = Bundle().apply {
-        putString("URLBlocklist", """["*"]""")
-        putString("URLAllowlist", """["https://primebook.in", "https://vipuljha.com"]""")
+        putString("URLBlocklist", """["*"]""") // Block all URLs
+        putString("URLAllowlist", """["https://primebook.in", "https://vipuljha.com", "chrome://policy"]""") //Website allowlist
+        putInt("IncognitoModeAvailability", 1) // Disable Incognito
+        putInt("DownloadRestrictions", 3) // Block all downloads. Works but downloads page crash
+        putString("HomepageLocation", "https://www.primebook.in") // Set homepage (only when home button is pressed)
     }
 
     /*    val restrictions = Bundle().apply {
