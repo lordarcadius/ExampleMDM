@@ -156,6 +156,7 @@ object Utils {
         isPackageHidden: Boolean,
         isWebsiteWhitelistEnabled: Boolean,
         isScreenshotDisabled: Boolean,
+        isMTPBlocked: Boolean,
     ): List<MdmSwitchControl> {
         return listOf(
             MdmSwitchControl(
@@ -243,6 +244,39 @@ object Utils {
                     }
                 }
             ),
+            MdmSwitchControl(
+                title = "Disable MTP",
+                isChecked = isMTPBlocked,
+                onCheckedChange = { isChecked ->
+                    if (dpm.isAdminActive(admin)) {
+                        try {
+                            if (isChecked) {
+                                dpm.addUserRestriction(
+                                    admin,
+                                    UserManager.DISALLOW_USB_FILE_TRANSFER
+                                )
+                                Log.i(
+                                    TAG,
+                                    "MTP file transfer disabled via DISALLOW_USB_FILE_TRANSFER"
+                                )
+                            } else {
+                                dpm.clearUserRestriction(
+                                    admin,
+                                    UserManager.DISALLOW_USB_FILE_TRANSFER
+                                )
+                                Log.i(
+                                    TAG,
+                                    "MTP file transfer enabled by clearing DISALLOW_USB_FILE_TRANSFER"
+                                )
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error while toggling MTP restriction: ${e.message}", e)
+                        }
+                    } else {
+                        Log.w(TAG, "Device admin not active. Cannot change MTP restriction.")
+                    }
+                }
+            )
         )
     }
 
