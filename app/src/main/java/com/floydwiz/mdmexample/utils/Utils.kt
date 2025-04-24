@@ -155,6 +155,7 @@ object Utils {
         isInstallDisabled: Boolean,
         isPackageHidden: Boolean,
         isWebsiteWhitelistEnabled: Boolean,
+        isScreenshotDisabled: Boolean,
     ): List<MdmSwitchControl> {
         return listOf(
             MdmSwitchControl(
@@ -230,6 +231,15 @@ object Utils {
                         }
                     } else {
                         Log.w("ChromeRestrictions", "Device admin is not active.")
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Disable Screenshot",
+                isChecked = isScreenshotDisabled,
+                onCheckedChange = { isChecked ->
+                    if (dpm.isAdminActive(admin)) {
+                        dpm.setScreenCaptureDisabled(admin, isChecked)
                     }
                 }
             ),

@@ -41,6 +41,7 @@ fun MdmControlsPage(
     val isCameraDisabled = dpm.getCameraDisabled(admin)
     val isPackageHidden = dpm.isApplicationHidden(admin, singlePackage)
     val isWebsiteWhitelistEnabled = dpm.getApplicationRestrictions(admin, "com.android.chrome")
+    val isScreenshotDisabled = dpm.getScreenCaptureDisabled(admin)
 
     println("$TAG isInstallDisabled: $isInstallDisabled, isCameraDisabled: $isCameraDisabled, isPackageHidden: $isPackageHidden")
 
@@ -54,7 +55,8 @@ fun MdmControlsPage(
                 isInstallDisabled = isInstallDisabled,
                 isPackageHidden = isPackageHidden,
                 isWebsiteWhitelistEnabled = false,
-                context = context
+                context = context,
+                isScreenshotDisabled = isScreenshotDisabled
             )
         }
     }
