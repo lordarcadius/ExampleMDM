@@ -32,6 +32,12 @@ class ControlsBuilder(
         .getBoolean(UserManager.DISALLOW_OUTGOING_CALLS, false)
     private val isSmsBlocked = dpm.getUserRestrictions(admin)
         .getBoolean(UserManager.DISALLOW_SMS, false)
+    private val isAirplaneModeBlocked = dpm.getUserRestrictions(admin)
+        .getBoolean(UserManager.DISALLOW_AIRPLANE_MODE, false)
+    private val isBluetoothBlocked = dpm.getUserRestrictions(admin)
+        .getBoolean(UserManager.DISALLOW_BLUETOOTH, false)
+    private val isBluetoothSharingBlocked = dpm.getUserRestrictions(admin)
+        .getBoolean(UserManager.DISALLOW_BLUETOOTH_SHARING, false)
 
     companion object {
         const val TAG = "ExampleMDMDebug: ControlsBuilder"
@@ -39,6 +45,45 @@ class ControlsBuilder(
 
     fun build(): List<MdmSwitchControl> {
         return listOf(
+            MdmSwitchControl(
+                title = "Block Bluetooth",
+                isChecked = isBluetoothBlocked,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_BLUETOOTH)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_BLUETOOTH)
+                        }
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Block Bluetooth Sharing",
+                isChecked = isBluetoothSharingBlocked,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_BLUETOOTH_SHARING)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_BLUETOOTH_SHARING)
+                        }
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Block Airplane Mode",
+                isChecked = isAirplaneModeBlocked,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_AIRPLANE_MODE)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_AIRPLANE_MODE)
+                        }
+                    }
+                }
+            ),
             MdmSwitchControl(
                 title = "Disable SMS",
                 isChecked = isSmsBlocked,
