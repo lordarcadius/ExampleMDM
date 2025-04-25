@@ -15,7 +15,7 @@ object Constants {
 
     const val SINGLE_PACKAGE = "com.floydwiz.forum"
 
-    const val BROWSER_PKG = "com.android.chrome"
+    const val BROWSER_PKG = "com.floydwiz.browser"
 
     // Define system app allowlist that the user is allowed to toggle
     val systemAppAllowlist = listOf(

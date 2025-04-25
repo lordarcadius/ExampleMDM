@@ -3,6 +3,7 @@ package com.floydwiz.mdmexample.utils
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import android.os.Bundle
 import android.os.UserManager
 import android.util.Log
 import com.floydwiz.mdmexample.data.AppWhitelistData
@@ -22,7 +23,6 @@ class ControlsBuilder(
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_INSTALL_APPS, false)
     private val isCameraDisabled = dpm.getCameraDisabled(admin)
     private val isPackageHidden = dpm.isApplicationHidden(admin, SINGLE_PACKAGE)
-    private val isWebsiteWhitelistEnabled = false
     private val isScreenshotDisabled = dpm.getScreenCaptureDisabled(admin)
     private val isMtpBlocked =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_USB_FILE_TRANSFER, false)
@@ -82,27 +82,33 @@ class ControlsBuilder(
             MdmSwitchControl(
                 title = "Whitelist Websites",
                 isChecked = isWebsiteWhitelistEnabled,
-                onCheckedChange = {
+                onCheckedChange = { isChecked ->
                     ifAdminActive(dpm, admin) {
                         try {
-                            Log.d("ChromeRestrictions", "Proposed restrictions: $restrictions")
+                            if (isChecked) {
+                                Log.d("ChromeRestrictions", "Proposed restrictions: $restrictions")
 
-                            // Set the application restrictions on Chrome
-                            dpm.setApplicationRestrictions(
-                                admin,
-                                BROWSER_PKG,
-                                restrictions
-                            )
+                                dpm.setApplicationRestrictions(admin, BROWSER_PKG, restrictions)
 
-                            // Retrieve the applied restrictions and log them
-                            val appliedRestrictions =
-                                dpm.getApplicationRestrictions(admin, BROWSER_PKG)
-                            Log.d(
-                                "ChromeRestrictions",
-                                "Applied restrictions: $appliedRestrictions"
-                            )
+                                val appliedRestrictions =
+                                    dpm.getApplicationRestrictions(admin, BROWSER_PKG)
+                                Log.d(
+                                    "ChromeRestrictions",
+                                    "Applied restrictions: $appliedRestrictions"
+                                )
+                            } else {
+                                Log.d("ChromeRestrictions", "Clearing all restrictions")
+                                dpm.setApplicationRestrictions(
+                                    admin,
+                                    BROWSER_PKG,
+                                    Bundle()
+                                ) // Clear restrictions
+                            }
                         } catch (e: Exception) {
-                            Log.e("ChromeRestrictions", "Failed to set restrictions: ${e.message}")
+                            Log.e(
+                                "ChromeRestrictions",
+                                "Failed to update restrictions: ${e.message}"
+                            )
                         }
                     }
                 }
@@ -208,6 +214,18 @@ class ControlsBuilder(
 
         return true
     }
+
+    private val isWebsiteWhitelistEnabled: Boolean
+        get() {
+            val restrictions = dpm.getApplicationRestrictions(admin, BROWSER_PKG)
+            val urlBlocklistJson = restrictions.getString("URLBlocklist")
+            val urlAllowlistJson = restrictions.getString("URLAllowlist")
+
+            return urlBlocklistJson?.contains("*") == true &&
+                    !urlAllowlistJson.isNullOrBlank() &&
+                    urlAllowlistJson != "[]"
+        }
+
 
     private inline fun ifAdminActive(
         dpm: DevicePolicyManager,
