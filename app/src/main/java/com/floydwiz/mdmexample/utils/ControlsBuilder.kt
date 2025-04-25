@@ -28,6 +28,10 @@ class ControlsBuilder(
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_USB_FILE_TRANSFER, false)
     private val isMicrophoneDisabled = dpm.getUserRestrictions(admin)
         .getBoolean(UserManager.DISALLOW_UNMUTE_MICROPHONE, false)
+    private val isCallBlocked = dpm.getUserRestrictions(admin)
+        .getBoolean(UserManager.DISALLOW_OUTGOING_CALLS, false)
+    private val isSmsBlocked = dpm.getUserRestrictions(admin)
+        .getBoolean(UserManager.DISALLOW_SMS, false)
 
     companion object {
         const val TAG = "ExampleMDMDebug: ControlsBuilder"
@@ -35,6 +39,32 @@ class ControlsBuilder(
 
     fun build(): List<MdmSwitchControl> {
         return listOf(
+            MdmSwitchControl(
+                title = "Disable SMS",
+                isChecked = isSmsBlocked,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_SMS)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_SMS)
+                        }
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Disable Outgoing Calls",
+                isChecked = isCallBlocked,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_OUTGOING_CALLS)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_OUTGOING_CALLS)
+                        }
+                    }
+                }
+            ),
             MdmSwitchControl(
                 title = "Disable Camera",
                 isChecked = isCameraDisabled,
