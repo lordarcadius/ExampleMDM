@@ -26,6 +26,8 @@ class ControlsBuilder(
     private val isScreenshotDisabled = dpm.getScreenCaptureDisabled(admin)
     private val isMtpBlocked =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_USB_FILE_TRANSFER, false)
+    private val isMicrophoneDisabled = dpm.getUserRestrictions(admin)
+        .getBoolean(UserManager.DISALLOW_UNMUTE_MICROPHONE, false)
 
     companion object {
         const val TAG = "ExampleMDMDebug: ControlsBuilder"
@@ -141,7 +143,20 @@ class ControlsBuilder(
                         }
                     }
                 }
-            )
+            ),
+            MdmSwitchControl(
+                title = "Disable Microphone",
+                isChecked = isMicrophoneDisabled,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_UNMUTE_MICROPHONE)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_UNMUTE_MICROPHONE)
+                        }
+                    }
+                }
+            ),
         )
     }
 
