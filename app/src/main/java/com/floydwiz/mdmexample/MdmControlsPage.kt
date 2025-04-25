@@ -1,8 +1,5 @@
 package com.floydwiz.mdmexample
 
-import android.app.admin.DevicePolicyManager
-import android.content.ComponentName
-import android.os.UserManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,56 +10,21 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.floydwiz.mdmexample.data.MdmSwitchControl
-import com.floydwiz.mdmexample.utils.Utils
-
-const val TAG = "mdmexampledebug"
+import com.floydwiz.mdmexample.utils.ControlsBuilder
 
 @Composable
 fun MdmControlsPage(
     paddingValues: PaddingValues,
-    admin: ComponentName,
-    dpm: DevicePolicyManager
+    controlsBuilder: ControlsBuilder
 ) {
-    val context = LocalContext.current
-    val singlePackage = "com.floydwiz.forum"
-    val controls = remember {
-        mutableStateListOf<MdmSwitchControl>()
-    }
-    val isInstallDisabled =
-        dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_INSTALL_APPS, false)
-    val isCameraDisabled = dpm.getCameraDisabled(admin)
-    val isPackageHidden = dpm.isApplicationHidden(admin, singlePackage)
-    val isWebsiteWhitelistEnabled = dpm.getApplicationRestrictions(admin, "com.android.chrome")
-    val isScreenshotDisabled = dpm.getScreenCaptureDisabled(admin)
-    val isMtpBlocked = dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_USB_FILE_TRANSFER, false)
-
-    println("$TAG isInstallDisabled: $isInstallDisabled, isCameraDisabled: $isCameraDisabled, isPackageHidden: $isPackageHidden")
-
-    LaunchedEffect(Unit) {
-        if (controls.isEmpty()) {
-            controls += Utils.createMdmControls(
-                admin = admin,
-                dpm = dpm,
-                singlePackage = singlePackage,
-                isCameraDisabled = isCameraDisabled,
-                isInstallDisabled = isInstallDisabled,
-                isPackageHidden = isPackageHidden,
-                isWebsiteWhitelistEnabled = false,
-                context = context,
-                isScreenshotDisabled = isScreenshotDisabled,
-                isMTPBlocked = isMtpBlocked
-            )
-        }
-    }
-
+    val controls =
+        remember { mutableStateListOf<MdmSwitchControl>().apply { addAll(controlsBuilder.build()) } }
 
     LazyColumn(modifier = Modifier.padding(paddingValues)) {
         itemsIndexed(controls) { index, control ->
@@ -71,7 +33,7 @@ fun MdmControlsPage(
                 isChecked = control.isChecked,
                 onCheckedChange = { isChecked ->
                     control.onCheckedChange(isChecked)
-                    controls[index] = control.copy(isChecked = isChecked)
+                    controls[index] = controls[index].copy(isChecked = isChecked)
                 }
             )
         }

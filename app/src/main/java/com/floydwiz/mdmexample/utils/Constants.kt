@@ -9,9 +9,11 @@ object Constants {
         AppWhitelistData("com.floydwiz.browser", false),
         AppWhitelistData("com.floydwiz.youtube", true),
         AppWhitelistData("com.floydwiz.primestore", false),
-        AppWhitelistData("com.floydwiz.nigger", false),
+        AppWhitelistData("com.floydwiz.fakepackage", false),
         AppWhitelistData("com.floydwiz.primefilemanager", false),
     )
+
+    const val SINGLE_PACKAGE = "com.floydwiz.forum"
 
     const val BROWSER_PKG = "com.android.chrome"
 

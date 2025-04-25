@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.floydwiz.mdmexample.ui.theme.ExampleMDMTheme
+import com.floydwiz.mdmexample.utils.ControlsBuilder
 
 class MainActivity : ComponentActivity() {
     private lateinit var adminComponent: ComponentName
@@ -20,11 +21,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         adminComponent = ComponentName(this, MyDeviceAdminReceiver::class.java)
+        val controlsBuilder = ControlsBuilder(
+            context = this,
+            admin = adminComponent,
+            dpm = dpm,
+        )
 
         setContent {
             ExampleMDMTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MdmControlsPage(innerPadding, adminComponent, dpm)
+                    MdmControlsPage(innerPadding, controlsBuilder)
                 }
             }
         }

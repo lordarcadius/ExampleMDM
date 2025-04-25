@@ -1,0 +1,219 @@
+package com.floydwiz.mdmexample.utils
+
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
+import android.content.Context
+import android.os.UserManager
+import android.util.Log
+import com.floydwiz.mdmexample.data.AppWhitelistData
+import com.floydwiz.mdmexample.data.MdmSwitchControl
+import com.floydwiz.mdmexample.utils.Constants.BROWSER_PKG
+import com.floydwiz.mdmexample.utils.Constants.restrictions
+import com.floydwiz.mdmexample.utils.Constants.SINGLE_PACKAGE
+import com.floydwiz.mdmexample.utils.Utils.getUserInstalledAppPackages
+import com.floydwiz.mdmexample.utils.Utils.isSystemApp
+
+class ControlsBuilder(
+    private val context: Context,
+    private val admin: ComponentName,
+    private val dpm: DevicePolicyManager,
+) {
+    private val isInstallDisabled =
+        dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_INSTALL_APPS, false)
+    private val isCameraDisabled = dpm.getCameraDisabled(admin)
+    private val isPackageHidden = dpm.isApplicationHidden(admin, SINGLE_PACKAGE)
+    private val isWebsiteWhitelistEnabled = false
+    private val isScreenshotDisabled = dpm.getScreenCaptureDisabled(admin)
+    private val isMtpBlocked =
+        dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_USB_FILE_TRANSFER, false)
+
+    companion object {
+        const val TAG = "ExampleMDMDebug: ControlsBuilder"
+    }
+
+    fun build(): List<MdmSwitchControl> {
+        return listOf(
+            MdmSwitchControl(
+                title = "Disable Camera",
+                isChecked = isCameraDisabled,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        dpm.setCameraDisabled(admin, isChecked)
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Disable App Install",
+                isChecked = isInstallDisabled,
+                onCheckedChange = { isChecked ->
+                    if (dpm.isAdminActive(admin)) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_INSTALL_APPS)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_INSTALL_APPS)
+                        }
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Hide Single Package",
+                isChecked = isPackageHidden,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        dpm.setApplicationHidden(admin, SINGLE_PACKAGE, isChecked)
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Enforce App Whitelist",
+                isChecked = false,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        enforceWhitelist(
+                            context = context,
+                            admin = admin,
+                            dpm = dpm,
+                            allowedPackages = Constants.APP_WHITELIST_DATA,
+                            block = isChecked
+                        )
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Whitelist Websites",
+                isChecked = isWebsiteWhitelistEnabled,
+                onCheckedChange = {
+                    ifAdminActive(dpm, admin) {
+                        try {
+                            Log.d("ChromeRestrictions", "Proposed restrictions: $restrictions")
+
+                            // Set the application restrictions on Chrome
+                            dpm.setApplicationRestrictions(
+                                admin,
+                                BROWSER_PKG,
+                                restrictions
+                            )
+
+                            // Retrieve the applied restrictions and log them
+                            val appliedRestrictions =
+                                dpm.getApplicationRestrictions(admin, BROWSER_PKG)
+                            Log.d(
+                                "ChromeRestrictions",
+                                "Applied restrictions: $appliedRestrictions"
+                            )
+                        } catch (e: Exception) {
+                            Log.e("ChromeRestrictions", "Failed to set restrictions: ${e.message}")
+                        }
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Disable Screenshot",
+                isChecked = isScreenshotDisabled,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        dpm.setScreenCaptureDisabled(admin, isChecked)
+                    }
+                }
+            ),
+            MdmSwitchControl(
+                title = "Disable MTP",
+                isChecked = isMtpBlocked,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        try {
+                            if (isChecked) {
+                                dpm.addUserRestriction(
+                                    admin,
+                                    UserManager.DISALLOW_USB_FILE_TRANSFER
+                                )
+                                Log.i(
+                                    TAG,
+                                    "MTP file transfer disabled via DISALLOW_USB_FILE_TRANSFER"
+                                )
+                            } else {
+                                dpm.clearUserRestriction(
+                                    admin,
+                                    UserManager.DISALLOW_USB_FILE_TRANSFER
+                                )
+                                Log.i(
+                                    TAG,
+                                    "MTP file transfer enabled by clearing DISALLOW_USB_FILE_TRANSFER"
+                                )
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error while toggling MTP restriction: ${e.message}", e)
+                        }
+                    }
+                }
+            )
+        )
+    }
+
+    private fun enforceWhitelist(
+        context: Context,
+        admin: ComponentName,
+        dpm: DevicePolicyManager,
+        allowedPackages: List<AppWhitelistData>,
+        block: Boolean
+    ): Boolean {
+        // Map for quick lookup
+        val whitelistMap = allowedPackages.associateBy { it.packageName }
+
+        // Get all user-installed apps
+        val installedPackages = getUserInstalledAppPackages(context)
+
+        // Start with installed packages only
+        val allPackagesToCheck = installedPackages.toMutableSet()
+
+        // Check each package in the whitelist map
+        for (pkg in whitelistMap.keys) {
+            val isWhitelisted = whitelistMap[pkg]?.isWhitelisted == true
+            if (isWhitelisted) {
+                // Always add explicitly whitelisted apps
+                Log.i(TAG, "Explicitly whitelisted, adding to check list: $pkg")
+                allPackagesToCheck.add(pkg)
+            } else if (block && isSystemApp(context, pkg) && !Constants.systemAppAllowlist.contains(
+                    pkg
+                )
+            ) {
+                // Skip system apps not in allowlist
+                Log.i(TAG, "Skipping system app not in allowlist: $pkg")
+            } else {
+                // Add user-installed or allowed system app
+                Log.i(TAG, "Adding to check list: $pkg")
+                allPackagesToCheck.add(pkg)
+            }
+        }
+
+        for (pkg in allPackagesToCheck) {
+            val whitelistEntry = whitelistMap[pkg]
+
+            // Determine whether the app should be visible based on the block state
+            val shouldBeVisible = if (!block) {
+                true // Toggle OFF: show everything
+            } else {
+                whitelistEntry?.isWhitelisted == true // Toggle ON: visible only if marked true
+            }
+
+            try {
+                // Set visibility for the app based on whether it should be shown or hidden
+                val result = dpm.setApplicationHidden(admin, pkg, !shouldBeVisible)
+                Log.d(TAG, "Set visibility for $pkg -> ${!shouldBeVisible} (result: $result)")
+            } catch (e: Exception) {
+                // Log any exception that occurs
+                Log.w(TAG, "Could not set visibility for $pkg: ${e.message}")
+            }
+        }
+
+        return true
+    }
+
+    private inline fun ifAdminActive(
+        dpm: DevicePolicyManager,
+        admin: ComponentName,
+        block: () -> Unit
+    ) {
+        if (dpm.isAdminActive(admin)) block()
+    }
+}
