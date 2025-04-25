@@ -22,6 +22,7 @@ class ControlsBuilder(
     private val isInstallDisabled =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_INSTALL_APPS, false)
     private val isCameraDisabled = dpm.getCameraDisabled(admin)
+    private val isLocationForceEnabled = false
     private val isPackageHidden = dpm.isApplicationHidden(admin, SINGLE_PACKAGE)
     private val isScreenshotDisabled = dpm.getScreenCaptureDisabled(admin)
     private val isMtpBlocked =
@@ -45,6 +46,20 @@ class ControlsBuilder(
 
     fun build(): List<MdmSwitchControl> {
         return listOf(
+            MdmSwitchControl(
+                title = "Force Enable Location",
+                isChecked = isLocationForceEnabled,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_CONFIG_LOCATION)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_CONFIG_LOCATION)
+                        }
+                    }
+                    dpm.setLocationEnabled(admin, isChecked)
+                }
+            ),
             MdmSwitchControl(
                 title = "Block Bluetooth",
                 isChecked = isBluetoothBlocked,
@@ -197,7 +212,7 @@ class ControlsBuilder(
                             if (isChecked) {
                                 dpm.addUserRestriction(
                                     admin,
-                                    UserManager.DISALLOW_USB_FILE_TRANSFER
+                                    UserManager.DISALLOW_CONFIG_LOCATION
                                 )
                                 Log.i(
                                     TAG,
