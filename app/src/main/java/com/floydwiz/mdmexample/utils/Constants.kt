@@ -15,7 +15,22 @@ object Constants {
 
     const val SINGLE_PACKAGE = "com.floydwiz.forum"
 
-    const val BROWSER_PKG = "com.floydwiz.browser"
+    val BROWSER_PKG = listOf(
+        "com.floydwiz.browser",         // PrimeOS Browser
+        "com.android.chrome",           // Chrome Stable
+        "com.chrome.beta",              // Chrome Beta
+        "com.chrome.dev",               // Chrome Dev
+        "com.chrome.canary",            // Chrome Canary
+        "com.brave.browser",            // Brave
+        "com.microsoft.emmx",           // Edge
+        "com.opera.browser",            // Opera
+        "com.opera.mini.native",        // Opera Mini
+        "com.vivaldi.browser",          // Vivaldi
+        "com.sec.android.app.sbrowser", // Samsung Internet
+        "com.kiwibrowser.browser",      // Kiwi
+        "com.yandex.browser",           // Yandex
+        "com.duckduckgo.mobile.android" // DuckDuckGo
+    )
 
     // Define system app allowlist that the user is allowed to toggle
     val systemAppAllowlist = listOf(

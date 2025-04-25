@@ -84,31 +84,20 @@ class ControlsBuilder(
                 isChecked = isWebsiteWhitelistEnabled,
                 onCheckedChange = { isChecked ->
                     ifAdminActive(dpm, admin) {
-                        try {
-                            if (isChecked) {
-                                Log.d("ChromeRestrictions", "Proposed restrictions: $restrictions")
-
-                                dpm.setApplicationRestrictions(admin, BROWSER_PKG, restrictions)
-
-                                val appliedRestrictions =
-                                    dpm.getApplicationRestrictions(admin, BROWSER_PKG)
-                                Log.d(
-                                    "ChromeRestrictions",
-                                    "Applied restrictions: $appliedRestrictions"
-                                )
-                            } else {
-                                Log.d("ChromeRestrictions", "Clearing all restrictions")
-                                dpm.setApplicationRestrictions(
-                                    admin,
-                                    BROWSER_PKG,
-                                    Bundle()
-                                ) // Clear restrictions
+                        BROWSER_PKG.forEach { pkg ->
+                            try {
+                                if (isChecked) {
+                                    Log.d("ChromeRestrictions", "Applying to $pkg → $restrictions")
+                                    dpm.setApplicationRestrictions(admin, pkg, restrictions)
+                                    val applied = dpm.getApplicationRestrictions(admin, pkg)
+                                    Log.d("ChromeRestrictions", "Restrictions for $pkg: $applied")
+                                } else {
+                                    Log.d("ChromeRestrictions", "Clearing restrictions for $pkg")
+                                    dpm.setApplicationRestrictions(admin, pkg, Bundle()) // clear
+                                }
+                            } catch (e: Exception) {
+                                Log.e("ChromeRestrictions", "Failed for $pkg: ${e.message}")
                             }
-                        } catch (e: Exception) {
-                            Log.e(
-                                "ChromeRestrictions",
-                                "Failed to update restrictions: ${e.message}"
-                            )
                         }
                     }
                 }
@@ -217,7 +206,7 @@ class ControlsBuilder(
 
     private val isWebsiteWhitelistEnabled: Boolean
         get() {
-            val restrictions = dpm.getApplicationRestrictions(admin, BROWSER_PKG)
+            val restrictions = dpm.getApplicationRestrictions(admin, BROWSER_PKG[0])
             val urlBlocklistJson = restrictions.getString("URLBlocklist")
             val urlAllowlistJson = restrictions.getString("URLAllowlist")
 
