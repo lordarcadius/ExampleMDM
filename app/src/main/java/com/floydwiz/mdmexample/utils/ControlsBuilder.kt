@@ -22,7 +22,8 @@ class ControlsBuilder(
     private val isInstallDisabled =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_INSTALL_APPS, false)
     private val isCameraDisabled = dpm.getCameraDisabled(admin)
-    private val isLocationForceEnabled = false
+    private val isLocationForceEnabled =
+        dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_CONFIG_LOCATION, false)
     private val isPackageHidden = dpm.isApplicationHidden(admin, SINGLE_PACKAGE)
     private val isScreenshotDisabled = dpm.getScreenCaptureDisabled(admin)
     private val isMtpBlocked =
