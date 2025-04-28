@@ -24,6 +24,9 @@ class ControlsBuilder(
     private val isCameraDisabled = dpm.getCameraDisabled(admin)
     private val isLocationForceEnabled =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_CONFIG_LOCATION, false)
+
+    private val isFactoryResetBlocked =
+        dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_FACTORY_RESET, false)
     private val isMultiUserDisabled =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_ADD_USER, false) &&
                 dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_USER_SWITCH, false)
@@ -50,6 +53,19 @@ class ControlsBuilder(
 
     fun build(): List<MdmSwitchControl> {
         return listOf(
+            MdmSwitchControl(
+                title = "Block Factory Reset",
+                isChecked = isFactoryResetBlocked,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_FACTORY_RESET)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_FACTORY_RESET)
+                        }
+                    }
+                }
+            ),
             MdmSwitchControl(
                 title = "Disable Multiuser",
                 isChecked = isMultiUserDisabled,
