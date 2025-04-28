@@ -27,6 +27,8 @@ class ControlsBuilder(
 
     private val isFactoryResetBlocked =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_FACTORY_RESET, false)
+    private val isWallpaperChangeDisabled =
+        dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_SET_WALLPAPER, false)
     private val isUnknownSourcesBlocked =
         dpm.getUserRestrictions(admin)
             .getBoolean(UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY, false)
@@ -56,6 +58,19 @@ class ControlsBuilder(
 
     fun build(): List<MdmSwitchControl> {
         return listOf(
+            MdmSwitchControl(
+                title = "Disable Wallpaper Change",
+                isChecked = isWallpaperChangeDisabled,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_SET_WALLPAPER)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_SET_WALLPAPER)
+                        }
+                    }
+                }
+            ),
             MdmSwitchControl(
                 title = "Disable Unknown Sources",
                 isChecked = isUnknownSourcesBlocked,
