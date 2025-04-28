@@ -27,6 +27,9 @@ class ControlsBuilder(
 
     private val isFactoryResetBlocked =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_FACTORY_RESET, false)
+    private val isUnknownSourcesBlocked =
+        dpm.getUserRestrictions(admin)
+            .getBoolean(UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY, false)
     private val isMultiUserDisabled =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_ADD_USER, false) &&
                 dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_USER_SWITCH, false)
@@ -53,6 +56,25 @@ class ControlsBuilder(
 
     fun build(): List<MdmSwitchControl> {
         return listOf(
+            MdmSwitchControl(
+                title = "Disable Unknown Sources",
+                isChecked = isUnknownSourcesBlocked,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(
+                                admin,
+                                UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY
+                            )
+                        } else {
+                            dpm.clearUserRestriction(
+                                admin,
+                                UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY
+                            )
+                        }
+                    }
+                }
+            ),
             MdmSwitchControl(
                 title = "Block Factory Reset",
                 isChecked = isFactoryResetBlocked,
