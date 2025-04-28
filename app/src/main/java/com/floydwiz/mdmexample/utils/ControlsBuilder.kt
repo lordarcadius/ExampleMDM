@@ -24,6 +24,9 @@ class ControlsBuilder(
     private val isCameraDisabled = dpm.getCameraDisabled(admin)
     private val isLocationForceEnabled =
         dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_CONFIG_LOCATION, false)
+    private val isMultiUserDisabled =
+        dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_ADD_USER, false) &&
+                dpm.getUserRestrictions(admin).getBoolean(UserManager.DISALLOW_USER_SWITCH, false)
     private val isPackageHidden = dpm.isApplicationHidden(admin, SINGLE_PACKAGE)
     private val isScreenshotDisabled = dpm.getScreenCaptureDisabled(admin)
     private val isMtpBlocked =
@@ -47,6 +50,21 @@ class ControlsBuilder(
 
     fun build(): List<MdmSwitchControl> {
         return listOf(
+            MdmSwitchControl(
+                title = "Disable Multiuser",
+                isChecked = isMultiUserDisabled,
+                onCheckedChange = { isChecked ->
+                    ifAdminActive(dpm, admin) {
+                        if (isChecked) {
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_ADD_USER)
+                            dpm.addUserRestriction(admin, UserManager.DISALLOW_USER_SWITCH)
+                        } else {
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_ADD_USER)
+                            dpm.clearUserRestriction(admin, UserManager.DISALLOW_USER_SWITCH)
+                        }
+                    }
+                }
+            ),
             MdmSwitchControl(
                 title = "Force Enable Location",
                 isChecked = isLocationForceEnabled,
