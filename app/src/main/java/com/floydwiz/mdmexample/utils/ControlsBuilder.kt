@@ -299,7 +299,7 @@ class ControlsBuilder(
                             if (isChecked) {
                                 dpm.addUserRestriction(
                                     admin,
-                                    UserManager.DISALLOW_CONFIG_LOCATION
+                                    UserManager.DISALLOW_USB_FILE_TRANSFER
                                 )
                                 Log.i(
                                     TAG,
